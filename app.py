@@ -134,6 +134,7 @@ def update_bar_plot(n_clicks, rows, derived_virtual_selected_rows):
             page_action="native", # Enable pagination
             page_current= 0, # Initial page
             page_size= 15, # Rows per page
+            active_cell={"row": 0, "column": 0}
         )        
         ]
 
