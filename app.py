@@ -159,5 +159,3 @@ def generate_and_download_file(n_clicks, rows):
 
         return dcc.send_data_frame(df_selected.to_csv, "associations.csv")
 
-if __name__ == '__main__':
-    app.run_server(debug=True)
