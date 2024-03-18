@@ -16,6 +16,7 @@ import shutil
 import plotly.graph_objects as go
 import plotly.io as pio
 pio.templates.default = 'simple_white'
+import io
 
 # Assuming df is your DataFrame
 df = pd.read_csv('taar_phewas_consgenesymbols_minimal_harmonized.tsv', sep='\t') # Uncomment and use if your data is in a CSV file
@@ -41,7 +42,9 @@ app.layout = html.Div(children=[dash_table.DataTable(
     page_current= 0, # Initial page
     page_size= 15, # Rows per page
 ),
-html.Button("Replot data", id="plot_data", n_clicks=0, style=b_vis),
+html.Button("Replot data", id="plot_data", style=b_vis),
+dcc.Download(id="download"),
+html.Button("Download Data", id="download-button", style=b_vis),
 html.Div(id='plot_container', children=[]),
 
 ])
@@ -63,6 +66,7 @@ def update_bar_plot(n_clicks, rows, derived_virtual_selected_rows):
     # Calculate the counts of different values in the "Subcategory" field
 
     counts=pd.DataFrame(dff['subcategory'].value_counts()).reset_index().rename(columns={'index':'subcategory','subcategory':'association_count'})
+    counts_genes=pd.DataFrame(dff['gs'].value_counts()).reset_index().rename(columns={'index':'gene','gs':'association_count'})
     # Create a bar plot
     return [
         dcc.Graph(
@@ -80,13 +84,57 @@ def update_bar_plot(n_clicks, rows, derived_virtual_selected_rows):
                     "xaxis": {"automargin": True},
                     "yaxis": {
                         "automargin": True,
-                        "title": {"text": 'black'}
+                        "title": {"text": 'Association count'}
                     },
-                    "height": 250,
-                    "margin": {"t": 10, "l": 10, "r": 10},
+                    "height": 300,
+                    "margin": {"t": 20, "l": 10, "r": 10},
                 },
             },
-        )]
+        ),
+        dcc.Graph(
+            id="gene_subcats_plot",
+            figure={
+                "data": [
+                    {
+                        "x": counts_genes['gene'],
+                        "y": counts_genes['association_count'],
+                        "type": "bar",
+                        "marker": {"color": 'skyblue'},
+                    }
+                ],
+                "layout": {
+                    "xaxis": {"automargin": True},
+                    "yaxis": {
+                        "automargin": True,
+                        "title": {"text": 'Association count'}
+                    },
+                    "height": 300,
+                    "margin": {"t": 20, "l": 10, "r": 10},
+                },
+            },
+        ),        
+        ]
+
+@app.callback(
+    Output("download", "data"),
+    Input("download-button", "n_clicks"),
+    State("table", "derived_virtual_data"),
+    prevent_intiial_call=True,
+)
+def generate_and_download_file(n_clicks, rows):
+    if n_clicks is None:
+        raise PreventUpdate
+    else:
+
+        # Assuming rows is a list of dictionaries representing the selected rows
+        # Convert it back to a DataFrame
+        df_selected = pd.DataFrame(rows)
+
+        # Generate a CSV file from the DataFrame
+        #csv_string = df_selected.to_csv(index=False, encoding='utf-8')
+        #csv_string = "data:text/csv;charset=utf-8," + csv_string
+
+        return dcc.send_data_frame(df_selected.to_csv, "associations.csv")
 
 if __name__ == '__main__':
     app.run_server(debug=True)
